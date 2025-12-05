@@ -1,10 +1,17 @@
 import logo from './logo.svg';
 import './App.css';
+import MyComponents from "./components/MyComponents";
+
 
 function App() {
   return (
     <div className="App">
       <header className="App-header">
+                <div className="App">
+      <app_headerrs />
+    </div>
+
+
         <img src={logo} className="App-logo" alt="logo" />
         <p>
           Edit <code>src/App.js</code> and save to reload.
@@ -16,10 +23,26 @@ function App() {
           rel="noopener noreferrer"
         >
           Learn React
-        </a>
-      </header>
+        </a>    
+    <div className="App">
+      <MyComponents />
     </div>
+
+
+      </header>
+      
+    </div>
+    
+
   );
 }
 
+// 
+// function App() {
+//   return (
+
+//   );
+// }
+
 export default App;
+
