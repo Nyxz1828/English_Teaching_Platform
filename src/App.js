@@ -1,21 +1,24 @@
 import logo from './logo.svg';
 import './App.css';
 import MyComponents from "./components/MyComponents";
-
+import Header from "./components/app_headers";
 
 function App() {
   return (
     <div className="App">
-      <header className="App-header">
-                <div className="App">
-      <app_headerrs />
-    </div>
 
+      {/* Top navigation header */}
+      <Header />
+
+      {/* Main content */}
+      <main className="App-header">
 
         <img src={logo} className="App-logo" alt="logo" />
+
         <p>
           Edit <code>src/App.js</code> and save to reload.
         </p>
+
         <a
           className="App-link"
           href="https://reactjs.org"
@@ -23,26 +26,15 @@ function App() {
           rel="noopener noreferrer"
         >
           Learn React
-        </a>    
-    <div className="App">
-      <MyComponents />
-    </div>
+        </a>
 
+        {/* Your custom components */}
+        <MyComponents />
 
-      </header>
+      </main>
       
     </div>
-    
-
   );
 }
 
-// 
-// function App() {
-//   return (
-
-//   );
-// }
-
 export default App;
-
