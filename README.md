@@ -1,3 +1,7 @@
+# Remember to  download react-route
+given comment： npm install react-router-dom
+then onnly execute: npm start
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
