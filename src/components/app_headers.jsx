@@ -15,15 +15,43 @@ export default function Header() {
   React.useEffect(() => {
     let isMounted = true;
 
-    const loadProfile = async (userId) => {
-      const { data } = await supabase
+    const loadOrCreateProfile = async (user) => {
+      const { data, error } = await supabase
         .from("profiles")
-        .select("email, role")
-        .eq("id", userId)
+        .select("id, email, role")
+        .eq("id", user.id)
+        .single();
+
+      if (!error && data) {
+        const { data: updated, error: updateError } = await supabase
+          .from("profiles")
+          .update({ email: user.email })
+          .eq("id", user.id)
+          .select("id, email, role")
+          .single();
+
+        if (isMounted) {
+          setProfile(updateError ? data : updated ?? data ?? null);
+        }
+        return;
+      }
+
+      const { data: created, error: insertError } = await supabase
+        .from("profiles")
+        .insert({
+          id: user.id,
+          email: user.email,
+          role: "student",
+        })
+        .select("id, email, role")
         .single();
 
       if (isMounted) {
-        setProfile(data ?? null);
+        if (insertError) {
+          setProfile(null);
+        } else {
+          setProfile(created ?? null);
+        }
       }
     };
 
@@ -37,7 +65,7 @@ export default function Header() {
 
       setAuthUser(sessionUser);
       if (sessionUser) {
-        await loadProfile(sessionUser.id);
+        await loadOrCreateProfile(sessionUser);
       } else {
         setProfile(null);
       }
@@ -50,7 +78,7 @@ export default function Header() {
         const sessionUser = session?.user ?? null;
         setAuthUser(sessionUser);
         if (sessionUser) {
-          loadProfile(sessionUser.id);
+          loadOrCreateProfile(sessionUser);
         } else {
           setProfile(null);
         }

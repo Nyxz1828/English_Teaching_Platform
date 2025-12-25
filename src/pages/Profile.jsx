@@ -1,7 +1,98 @@
 import React from "react";
 import theme from "../styles/theme";
+import supabase from "../lib/supabase";
 
 function Profile() {
+  const [authUser, setAuthUser] = React.useState(null);
+  const [profile, setProfile] = React.useState(null);
+  const [enrollments, setEnrollments] = React.useState([]);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [loadError, setLoadError] = React.useState("");
+
+  React.useEffect(() => {
+    let isMounted = true;
+
+    const loadProfile = async (userId) => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("email, role")
+        .eq("id", userId)
+        .single();
+
+      if (isMounted) {
+        setProfile(data ?? null);
+      }
+    };
+
+    const loadEnrollments = async (userId) => {
+      setIsLoading(true);
+      setLoadError("");
+      const { data, error } = await supabase
+        .from("enrollments")
+        .select("id, enrolled_at, courses ( id, title, description )")
+        .eq("student_id", userId)
+        .order("enrolled_at", { ascending: false });
+
+      if (!isMounted) {
+        return;
+      }
+
+      if (error) {
+        setLoadError(error.message);
+        setEnrollments([]);
+      } else {
+        setEnrollments(data ?? []);
+      }
+      setIsLoading(false);
+    };
+
+    const initAuth = async () => {
+      const { data } = await supabase.auth.getSession();
+      const sessionUser = data?.session?.user ?? null;
+
+      if (!isMounted) {
+        return;
+      }
+
+      setAuthUser(sessionUser);
+      if (sessionUser) {
+        await loadProfile(sessionUser.id);
+        await loadEnrollments(sessionUser.id);
+      } else {
+        setProfile(null);
+        setEnrollments([]);
+        setIsLoading(false);
+      }
+    };
+
+    initAuth();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        const sessionUser = session?.user ?? null;
+        setAuthUser(sessionUser);
+        if (sessionUser) {
+          loadProfile(sessionUser.id);
+          loadEnrollments(sessionUser.id);
+        } else {
+          setProfile(null);
+          setEnrollments([]);
+          setIsLoading(false);
+        }
+      }
+    );
+
+    return () => {
+      isMounted = false;
+      authListener?.subscription?.unsubscribe();
+    };
+  }, []);
+
+  const displayEmail = profile?.email || authUser?.email || "Guest";
+  const displayName = displayEmail.includes("@")
+    ? displayEmail.split("@")[0]
+    : displayEmail;
+
   const stats = [
     { label: "已完成課程", value: "12", icon: "✅", color: theme.colors.success.main },
     { label: "進行中課程", value: "3", icon: "📚", color: theme.colors.primary.main },
@@ -13,9 +104,11 @@ function Profile() {
     <div style={styles.container}>
       <div style={styles.profileHeader}>
         <div style={styles.avatarSection}>
-          <div style={styles.avatar}>👤</div>
-          <h1 style={styles.userName}>使用者名稱</h1>
-          <p style={styles.userEmail}>user@example.com</p>
+          <div style={styles.avatar}>
+            {displayName ? displayName.charAt(0).toUpperCase() : "U"}
+          </div>
+          <h1 style={styles.userName}>{displayName || "User"}</h1>
+          <p style={styles.userEmail}>{displayEmail}</p>
         </div>
       </div>
 
@@ -99,6 +192,36 @@ function Profile() {
               <span style={styles.infoValue}>晚上 7-9 點</span>
             </div>
           </div>
+        </div>
+
+        <div style={styles.section}>
+          <h2 style={styles.sectionTitle}>Enrolled Courses</h2>
+          {isLoading ? (
+            <p style={styles.emptyState}>Loading enrollments...</p>
+          ) : loadError ? (
+            <p style={styles.emptyState}>{loadError}</p>
+          ) : !authUser ? (
+            <p style={styles.emptyState}>Log in to see your enrolled courses.</p>
+          ) : enrollments.length === 0 ? (
+            <p style={styles.emptyState}>No courses enrolled yet.</p>
+          ) : (
+            <div style={styles.courseList}>
+              {enrollments.map((enrollment) => (
+                <div key={enrollment.id} style={styles.courseCard}>
+                  <div style={styles.courseTitle}>
+                    {enrollment.courses?.title || "Untitled course"}
+                  </div>
+                  <div style={styles.courseMeta}>
+                    {enrollment.courses?.description || "No description provided."}
+                  </div>
+                  <div style={styles.courseMeta}>
+                    Enrolled{" "}
+                    {new Date(enrollment.enrolled_at).toLocaleDateString()}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -263,6 +386,31 @@ const styles = {
     fontSize: theme.typography.fontSize.base,
     color: theme.colors.text.primary,
     fontWeight: theme.typography.fontWeight.semibold,
+  },
+  emptyState: {
+    fontSize: theme.typography.fontSize.base,
+    color: theme.colors.text.secondary,
+    margin: 0,
+  },
+  courseList: {
+    display: "flex",
+    flexDirection: "column",
+    gap: theme.spacing.md,
+  },
+  courseCard: {
+    borderRadius: theme.borderRadius.lg,
+    border: `1px solid ${theme.colors.neutral.gray200}`,
+    padding: theme.spacing.md,
+  },
+  courseTitle: {
+    fontSize: theme.typography.fontSize.lg,
+    fontWeight: theme.typography.fontWeight.semibold,
+    color: theme.colors.text.primary,
+  },
+  courseMeta: {
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.text.secondary,
+    marginTop: theme.spacing.xs,
   },
 };
 

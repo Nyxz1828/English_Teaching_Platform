@@ -88,7 +88,7 @@ function Lesson() {
     return courses.filter(
       (course) =>
         course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (course.description || "")}
+        (course.description || "")
           .toLowerCase()
           .includes(searchTerm.toLowerCase())
     );
@@ -302,6 +302,7 @@ const styles = {
 };
 
 export default Lesson;
+
 
 
 
