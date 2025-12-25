@@ -1,8 +1,9 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import theme from "../styles/theme";
 import { useToastContext } from "../contexts/ToastContext";
 import Tooltip from "../components/Tooltip";
 import SearchBar from "../components/SearchBar";
+import supabase from "../lib/supabase";
 
 const allLessons = [
   {
@@ -31,15 +32,86 @@ const allLessons = [
 function Lesson() {
   const toast = useToastContext();
   const [searchTerm, setSearchTerm] = useState("");
+  const [courses, setCourses] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [authUser, setAuthUser] = useState(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadCourses = async () => {
+      setIsLoading(true);
+      setLoadError("");
+      const { data, error } = await supabase
+        .from("courses")
+        .select("id, title, description, created_at")
+        .order("created_at", { ascending: false });
+
+      if (!isMounted) {
+        return;
+      }
+
+      if (error) {
+        setLoadError(error.message);
+        setCourses([]);
+      } else {
+        setCourses(data ?? []);
+      }
+      setIsLoading(false);
+    };
+
+    const initAuth = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (isMounted) {
+        setAuthUser(data?.session?.user ?? null);
+      }
+    };
+
+    loadCourses();
+    initAuth();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setAuthUser(session?.user ?? null);
+      }
+    );
+
+    return () => {
+      isMounted = false;
+      authListener?.subscription?.unsubscribe();
+    };
+  }, []);
 
   const filteredLessons = useMemo(() => {
-    if (!searchTerm) return allLessons;
-    return allLessons.filter(
-      (lesson) =>
-        lesson.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lesson.level.toLowerCase().includes(searchTerm.toLowerCase())
+    if (!searchTerm) return courses;
+    return courses.filter(
+      (course) =>
+        course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (course.description || "")}
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase())
     );
-  }, [searchTerm]);
+  }, [searchTerm, courses]);
+
+  const handleEnroll = async (course) => {
+    if (!authUser) {
+      toast.error("Please log in to enroll.");
+      return;
+    }
+
+    const { error } = await supabase.from("enrollments").insert({
+      student_id: authUser.id,
+      course_id: course.id,
+    });
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    toast.success(`Enrolled in ${course.title}.`);
+  };
 
   return (
     <div style={styles.container}>
@@ -54,15 +126,23 @@ function Lesson() {
         </div>
       </div>
 
-      {filteredLessons.length === 0 ? (
+      {isLoading ? (
+        <div style={styles.noResults}>
+          <p>Loading courses...</p>
+        </div>
+      ) : loadError ? (
+        <div style={styles.noResults}>
+          <p>{loadError}</p>
+        </div>
+      ) : filteredLessons.length === 0 ? (
         <div style={styles.noResults}>
           <p>找不到符合「{searchTerm}」的課程</p>
         </div>
       ) : (
         <div style={styles.lessonsGrid}>
-          {filteredLessons.map((lesson, index) => (
+          {filteredLessons.map((course, index) => (
             <div
-              key={index}
+              key={course.id}
               style={{
                 ...styles.lessonCard,
                 animationDelay: `${index * 0.1}s`,
@@ -72,38 +152,38 @@ function Lesson() {
               <div
                 style={{
                   ...styles.lessonHeader,
-                  backgroundColor: `${lesson.color}15`,
+                  backgroundColor: `${theme.colors.primary.main}15`,
                 }}
               >
-                <h3 style={styles.lessonTitle}>{lesson.title}</h3>
+                <h3 style={styles.lessonTitle}>{course.title}</h3>
                 <span
                   style={{
                     ...styles.levelBadge,
-                    backgroundColor: lesson.color,
+                    backgroundColor: theme.colors.primary.main,
                   }}
                 >
-                  {lesson.level}
+                  Course
                 </span>
               </div>
               <div style={styles.lessonBody}>
                 <div style={styles.lessonInfo}>
                   <span style={styles.infoItem}>
                     <span style={styles.infoIcon}>⏱️</span>
-                    課程時長：{lesson.duration}
+                    課程時長：{course.description || "No description provided."}
                   </span>
                   <span style={styles.infoItem}>
                     <span style={styles.infoIcon}>👥</span>
-                    學員數：{lesson.students}
+                    學員數：{new Date(course.created_at).toLocaleDateString()}
                   </span>
                 </div>
-                <Tooltip text={`報名 ${lesson.title} 課程`}>
+                <Tooltip text={`報名 ${course.title} 課程`}>
                   <button
                     style={{
                       ...styles.enrollButton,
-                      backgroundColor: lesson.color,
+                      backgroundColor: theme.colors.primary.main,
                     }}
                     onClick={() => {
-                      toast.success(`已成功報名「${lesson.title}」課程！`);
+                      handleEnroll(course);
                     }}
                     className="hover-lift"
                   >
@@ -222,3 +302,9 @@ const styles = {
 };
 
 export default Lesson;
+
+
+
+
+
+

@@ -4,7 +4,11 @@ then only execute: npm start
 
 
 
+<<<<<<< HEAD
 ing Started with Create React App
+=======
+# Getting Started with Create React App
+>>>>>>> 89ca796cf62a98ac030fd3fa03abf8b519078a76
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
