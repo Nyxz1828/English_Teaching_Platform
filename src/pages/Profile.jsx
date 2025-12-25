@@ -8,6 +8,7 @@ function Profile() {
   const [enrollments, setEnrollments] = React.useState([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [loadError, setLoadError] = React.useState("");
+  const [deletingId, setDeletingId] = React.useState(null);
 
   React.useEffect(() => {
     let isMounted = true;
@@ -92,6 +93,27 @@ function Profile() {
   const displayName = displayEmail.includes("@")
     ? displayEmail.split("@")[0]
     : displayEmail;
+
+  const handleUnenroll = async (enrollmentId) => {
+    if (!authUser) {
+      return;
+    }
+
+    setDeletingId(enrollmentId);
+    const { error } = await supabase
+      .from("enrollments")
+      .delete()
+      .eq("id", enrollmentId);
+
+    if (!error) {
+      setEnrollments((current) =>
+        current.filter((item) => item.id !== enrollmentId)
+      );
+    } else {
+      setLoadError(error.message);
+    }
+    setDeletingId(null);
+  };
 
   const stats = [
     { label: "已完成課程", value: "12", icon: "✅", color: theme.colors.success.main },
@@ -218,6 +240,14 @@ function Profile() {
                     Enrolled{" "}
                     {new Date(enrollment.enrolled_at).toLocaleDateString()}
                   </div>
+                  <button
+                    type="button"
+                    style={styles.deleteButton}
+                    onClick={() => handleUnenroll(enrollment.id)}
+                    disabled={deletingId === enrollment.id}
+                  >
+                    {deletingId === enrollment.id ? "Removing..." : "Remove"}
+                  </button>
                 </div>
               ))}
             </div>
@@ -411,6 +441,16 @@ const styles = {
     fontSize: theme.typography.fontSize.sm,
     color: theme.colors.text.secondary,
     marginTop: theme.spacing.xs,
+  },
+  deleteButton: {
+    marginTop: theme.spacing.sm,
+    border: "none",
+    borderRadius: theme.borderRadius.sm,
+    backgroundColor: theme.colors.error?.main || "#b00020",
+    color: theme.colors.text.inverse,
+    padding: "6px 10px",
+    cursor: "pointer",
+    fontSize: theme.typography.fontSize.sm,
   },
 };
 
