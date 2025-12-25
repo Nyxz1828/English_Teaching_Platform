@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
+import { Link } from "react-router-dom";
 import theme from "../styles/theme";
 import { useToastContext } from "../contexts/ToastContext";
 import Tooltip from "../components/Tooltip";
@@ -169,14 +170,15 @@ function Lesson() {
                 <div style={styles.lessonInfo}>
                   <span style={styles.infoItem}>
                     <span style={styles.infoIcon}>⏱️</span>
-                    課程時長：{course.description || "No description provided."}
+                    課程基本資訊：{course.description || "No description provided."}
                   </span>
                   <span style={styles.infoItem}>
                     <span style={styles.infoIcon}>👥</span>
                     課程日期：{new Date(course.created_at).toLocaleDateString()}
                   </span>
                 </div>
-                <Tooltip text={`報名 ${course.title} 課程`}>
+                <div style={styles.courseActions}>
+                  <Tooltip text={`報名 ${course.title} 課程`}>
                   <button
                     style={{
                       ...styles.enrollButton,
@@ -189,7 +191,11 @@ function Lesson() {
                   >
                     立即報名
                   </button>
-                </Tooltip>
+                  </Tooltip>
+                  <Link to={`/course/${course.id}`} style={styles.detailsLink}>
+                  View details
+                  </Link>
+                </div>
               </div>
             </div>
           ))}
@@ -298,6 +304,21 @@ const styles = {
     cursor: "pointer",
     transition: "all 0.3s ease",
     boxShadow: theme.shadows.sm,
+  },
+  courseActions: {
+    display: "flex",
+    flexDirection: "column",
+    gap: theme.spacing.sm,
+  },
+  detailsLink: {
+    textDecoration: "none",
+    textAlign: "center",
+    padding: theme.spacing.sm,
+    borderRadius: theme.borderRadius.lg,
+    border: `1px solid ${theme.colors.neutral.gray200}`,
+    color: theme.colors.text.primary,
+    fontSize: theme.typography.fontSize.base,
+    fontWeight: theme.typography.fontWeight.medium,
   },
 };
 

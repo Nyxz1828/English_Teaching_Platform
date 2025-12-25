@@ -30,7 +30,9 @@ function Profile() {
       setLoadError("");
       const { data, error } = await supabase
         .from("enrollments")
-        .select("id, enrolled_at, courses ( id, title, description )")
+        .select(
+          "id, enrolled_at, courses ( id, title, description, helpful_percentage, helpful_percentage_work )"
+        )
         .eq("student_id", userId)
         .order("enrolled_at", { ascending: false });
 
@@ -127,6 +129,17 @@ function Profile() {
     { label: "成就徽章", value: "8", icon: "🏆", color: theme.colors.warning.main },
   ];
 
+  const totalHelpful = enrollments.reduce(
+    (sum, item) => sum + (item.courses?.helpful_percentage ?? 0),
+    0
+  );
+  const totalHelpfulWork = enrollments.reduce(
+    (sum, item) => sum + (item.courses?.helpful_percentage_work ?? 0),
+    0
+  );
+  const helpfulFill = Math.min(totalHelpful, 100);
+  const helpfulWorkFill = Math.min(totalHelpfulWork, 100);
+
   return (
     <div style={styles.container}>
       <div style={styles.profileHeader}>
@@ -173,13 +186,13 @@ function Profile() {
             <div style={styles.progressItem}>
               <div style={styles.progressHeader}>
                 <span style={styles.progressLabel}>基礎英語會話</span>
-                <span style={styles.progressPercent}>75%</span>
+                <span style={styles.progressPercent}>{totalHelpful}%</span>
               </div>
               <div style={styles.progressBar}>
                 <div
                   style={{
                     ...styles.progressFill,
-                    width: "75%",
+                    width: `${helpfulFill}%`,
                     backgroundColor: theme.colors.primary.main,
                   }}
                 />
@@ -188,13 +201,13 @@ function Profile() {
             <div style={styles.progressItem}>
               <div style={styles.progressHeader}>
                 <span style={styles.progressLabel}>商務英語寫作</span>
-                <span style={styles.progressPercent}>45%</span>
+                <span style={styles.progressPercent}>{totalHelpfulWork}%</span>
               </div>
               <div style={styles.progressBar}>
                 <div
                   style={{
                     ...styles.progressFill,
-                    width: "45%",
+                    width: `${helpfulWorkFill}%`,
                     backgroundColor: theme.colors.secondary.main,
                   }}
                 />

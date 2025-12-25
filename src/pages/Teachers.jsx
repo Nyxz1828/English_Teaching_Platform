@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
+import { Link } from "react-router-dom";
 import theme from "../styles/theme";
 import { useToastContext } from "../contexts/ToastContext";
 import Tooltip from "../components/Tooltip";
@@ -124,21 +125,26 @@ function Teachers() {
                 <h3 style={styles.teacherName}>{teacher.name}</h3>
                 <p style={styles.teacherSubject}>{teacher.email}</p>
                 <p style={styles.experience}>{teacher.role}</p>
-                <Tooltip text={`Contact ${teacher.name}`}>
-                  <button
-                    style={{
-                      ...styles.contactButton,
-                      borderColor: teacher.color,
-                      color: teacher.color,
-                    }}
-                    onClick={() => {
-                      toast.info(`Reaching out to ${teacher.name}...`);
-                    }}
-                    className="hover-lift"
-                  >
-                    К?_ЗцнСTЖ,о
-                  </button>
-                </Tooltip>
+                <div style={styles.teacherActions}>
+                  <Tooltip text={`Contact ${teacher.name}`}>
+                    <button
+                      style={{
+                        ...styles.contactButton,
+                        borderColor: teacher.color,
+                        color: teacher.color,
+                      }}
+                      onClick={() => {
+                        toast.info(`Reaching out to ${teacher.name}...`);
+                      }}
+                      className="hover-lift"
+                    >
+                      Contact
+                    </button>
+                  </Tooltip>
+                  <Link to={`/teacher/${teacher.id}`} style={styles.detailsLink}>
+                    More details
+                  </Link>
+                </div>
               </div>
             </div>
           ))}
@@ -245,6 +251,17 @@ const styles = {
     fontWeight: theme.typography.fontWeight.semibold,
     cursor: "pointer",
     transition: "all 0.3s ease",
+  },
+  teacherActions: {
+    display: "flex",
+    flexDirection: "column",
+    gap: theme.spacing.sm,
+    alignItems: "center",
+  },
+  detailsLink: {
+    textDecoration: "none",
+    color: theme.colors.primary.main,
+    fontWeight: theme.typography.fontWeight.medium,
   },
 };
 

@@ -8,6 +8,8 @@ import Lesson from "./pages/Lesson";
 import Teachers from "./pages/Teachers";
 import Profile from "./pages/Profile";
 import FileContent from "./pages/FileContent";
+import CourseDetails from "./pages/CourseDetails";
+import TeacherDetails from "./pages/TeacherDetails";
 
 function App() {
   return (
@@ -19,7 +21,9 @@ function App() {
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/lesson" element={<Lesson />} />
+              <Route path="/course/:id" element={<CourseDetails />} />
               <Route path="/teachers" element={<Teachers />} />
+              <Route path="/teacher/:id" element={<TeacherDetails />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/file-content" element={<FileContent />} />
             </Routes>
