@@ -117,7 +117,12 @@ function Profile() {
 
   const stats = [
     { label: "已完成課程", value: "12", icon: "✅", color: theme.colors.success.main },
-    { label: "進行中課程", value: "3", icon: "📚", color: theme.colors.primary.main },
+    {
+      label: "進行中課程",
+      value: `${enrollments.length}`,
+      icon: "📚",
+      color: theme.colors.primary.main,
+    },
     { label: "學習時數", value: "156", icon: "⏰", color: theme.colors.secondary.main },
     { label: "成就徽章", value: "8", icon: "🏆", color: theme.colors.warning.main },
   ];
@@ -203,15 +208,21 @@ function Profile() {
           <div style={styles.infoCard}>
             <div style={styles.infoRow}>
               <span style={styles.infoLabel}>加入日期</span>
-              <span style={styles.infoValue}>2024年1月</span>
+              <span style={styles.infoValue}>
+                {profile?.created_at || "—"}
+              </span>
             </div>
             <div style={styles.infoRow}>
-              <span style={styles.infoLabel}>學習目標</span>
-              <span style={styles.infoValue}>提升商務英語能力</span>
+              <span style={styles.infoLabel}>UUID</span>
+              <span style={styles.infoValue}>{authUser?.id || "—"}</span>
             </div>
             <div style={styles.infoRow}>
-              <span style={styles.infoLabel}>偏好學習時間</span>
-              <span style={styles.infoValue}>晚上 7-9 點</span>
+              <span style={styles.infoLabel}>角色</span>
+              <span style={styles.infoValue}>{profile?.role || "—"}</span>
+            </div>
+            <div style={styles.infoRow}>
+              <span style={styles.infoLabel}>Email</span>
+              <span style={styles.infoValue}>{profile?.email || "—"}</span>
             </div>
           </div>
         </div>

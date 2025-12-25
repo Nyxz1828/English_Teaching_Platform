@@ -1,74 +1,111 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import theme from "../styles/theme";
 import { useToastContext } from "../contexts/ToastContext";
 import Tooltip from "../components/Tooltip";
 import SearchBar from "../components/SearchBar";
-
-const allTeachers = [
-  {
-    name: "Sarah Johnson",
-    subject: "會話英語",
-    experience: "10 年教學經驗",
-    rating: 4.9,
-    students: 250,
-    avatar: "👩‍🏫",
-    color: theme.colors.primary.main,
-  },
-  {
-    name: "Michael Chen",
-    subject: "商務英語",
-    experience: "8 年教學經驗",
-    rating: 4.8,
-    students: 180,
-    avatar: "👨‍🏫",
-    color: theme.colors.secondary.main,
-  },
-  {
-    name: "Emily Davis",
-    subject: "學術英語",
-    experience: "12 年教學經驗",
-    rating: 5.0,
-    students: 320,
-    avatar: "👩‍🏫",
-    color: theme.colors.success.main,
-  },
-];
+import supabase from "../lib/supabase";
 
 function Teachers() {
   const toast = useToastContext();
   const [searchTerm, setSearchTerm] = useState("");
+  const [teachers, setTeachers] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadTeachers = async () => {
+      setIsLoading(true);
+      setLoadError("");
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, email, role")
+        .eq("role", "teacher")
+        .order("created_at", { ascending: false });
+
+      if (!isMounted) {
+        return;
+      }
+
+      if (error) {
+        setLoadError(error.message);
+        setTeachers([]);
+      } else {
+        const mapped = (data ?? []).map((teacher, index) => {
+          const email = teacher.email || "teacher@example.com";
+          const name = email.includes("@") ? email.split("@")[0] : email;
+          return {
+            id: teacher.id,
+            name,
+            email,
+            role: teacher.role,
+            avatar: name.charAt(0).toUpperCase(),
+            color:
+              index % 3 === 0
+                ? theme.colors.primary.main
+                : index % 3 === 1
+                ? theme.colors.secondary.main
+                : theme.colors.success.main,
+          };
+        });
+        setTeachers(mapped);
+      }
+      setIsLoading(false);
+    };
+
+    loadTeachers();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const filteredTeachers = useMemo(() => {
-    if (!searchTerm) return allTeachers;
-    return allTeachers.filter(
+    if (!searchTerm) return teachers;
+    return teachers.filter(
       (teacher) =>
         teacher.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        teacher.subject.toLowerCase().includes(searchTerm.toLowerCase())
+        teacher.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [searchTerm]);
+  }, [searchTerm, teachers]);
 
   return (
     <div style={styles.container}>
       <div style={styles.header}>
-        <h1 style={styles.title}>教師資訊</h1>
-        <p style={styles.subtitle}>認識我們的專業教師團隊</p>
+        <h1 style={styles.title}>Teachers</h1>
+        <p style={styles.subtitle}>
+          Meet our teachers and connect with them for guidance.
+        </p>
         <div style={styles.searchContainer}>
           <SearchBar
             onSearch={setSearchTerm}
-            placeholder="搜尋教師姓名或科目..."
+            placeholder="Search teachers..."
           />
         </div>
       </div>
 
-      {filteredTeachers.length === 0 ? (
+      {isLoading ? (
         <div style={styles.noResults}>
-          <p>找不到符合「{searchTerm}」的教師</p>
+          <p>Loading teachers...</p>
+        </div>
+      ) : loadError ? (
+        <div style={styles.noResults}>
+          <p>{loadError}</p>
+        </div>
+      ) : filteredTeachers.length === 0 ? (
+        <div style={styles.noResults}>
+          {searchTerm ? (
+            <p>No teachers match "{searchTerm}".</p>
+          ) : (
+            <p>No teachers available.</p>
+          )}
         </div>
       ) : (
         <div style={styles.teachersGrid}>
           {filteredTeachers.map((teacher, index) => (
             <div
-              key={index}
+              key={teacher.id}
               style={{
                 ...styles.teacherCard,
                 animationDelay: `${index * 0.1}s`,
@@ -85,19 +122,9 @@ function Teachers() {
               </div>
               <div style={styles.teacherInfo}>
                 <h3 style={styles.teacherName}>{teacher.name}</h3>
-                <p style={styles.teacherSubject}>{teacher.subject}</p>
-                <div style={styles.teacherDetails}>
-                  <span style={styles.detailItem}>
-                    <span style={styles.detailIcon}>⭐</span>
-                    {teacher.rating}
-                  </span>
-                  <span style={styles.detailItem}>
-                    <span style={styles.detailIcon}>👥</span>
-                    {teacher.students} 學員
-                  </span>
-                </div>
-                <p style={styles.experience}>{teacher.experience}</p>
-                <Tooltip text={`聯絡 ${teacher.name} 教師`}>
+                <p style={styles.teacherSubject}>{teacher.email}</p>
+                <p style={styles.experience}>{teacher.role}</p>
+                <Tooltip text={`Contact ${teacher.name}`}>
                   <button
                     style={{
                       ...styles.contactButton,
@@ -105,11 +132,11 @@ function Teachers() {
                       color: teacher.color,
                     }}
                     onClick={() => {
-                      toast.info(`正在為您連線 ${teacher.name} 教師...`);
+                      toast.info(`Reaching out to ${teacher.name}...`);
                     }}
                     className="hover-lift"
                   >
-                    聯絡教師
+                    К?_ЗцнСTЖ,о
                   </button>
                 </Tooltip>
               </div>
@@ -202,26 +229,11 @@ const styles = {
     color: theme.colors.text.secondary,
     margin: 0,
   },
-  teacherDetails: {
-    display: "flex",
-    justifyContent: "center",
-    gap: theme.spacing.lg,
-    marginTop: theme.spacing.sm,
-  },
-  detailItem: {
-    display: "flex",
-    alignItems: "center",
-    gap: theme.spacing.xs,
-    fontSize: theme.typography.fontSize.sm,
-    color: theme.colors.text.secondary,
-  },
-  detailIcon: {
-    fontSize: theme.typography.fontSize.base,
-  },
   experience: {
     fontSize: theme.typography.fontSize.sm,
     color: theme.colors.text.secondary,
     marginTop: theme.spacing.sm,
+    textTransform: "capitalize",
   },
   contactButton: {
     marginTop: theme.spacing.md,

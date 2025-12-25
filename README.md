@@ -3,16 +3,16 @@ given comment：
 
 
 
-npm install react-router-dom
+```npm install react-router-dom```
 
 
-npm install react-router-dom
+```npm install react-router-dom```
 
 
 then only execute: 
 
 
-npm start
+ ```npm start```
 
 
 

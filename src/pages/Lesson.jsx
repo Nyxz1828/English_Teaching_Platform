@@ -173,7 +173,7 @@ function Lesson() {
                   </span>
                   <span style={styles.infoItem}>
                     <span style={styles.infoIcon}>👥</span>
-                    學員數：{new Date(course.created_at).toLocaleDateString()}
+                    課程日期：{new Date(course.created_at).toLocaleDateString()}
                   </span>
                 </div>
                 <Tooltip text={`報名 ${course.title} 課程`}>
