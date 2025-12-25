@@ -1,11 +1,108 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import theme from "../styles/theme";
+import supabase from "../lib/supabase";
 
 export default function Header() {
   const location = useLocation();
+  const [authUser, setAuthUser] = React.useState(null);
+  const [profile, setProfile] = React.useState(null);
+  const [email, setEmail] = React.useState("");
+  const [password, setPassword] = React.useState("");
+  const [authError, setAuthError] = React.useState("");
+  const [isAuthLoading, setIsAuthLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    let isMounted = true;
+
+    const loadProfile = async (userId) => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("email, role")
+        .eq("id", userId)
+        .single();
+
+      if (isMounted) {
+        setProfile(data ?? null);
+      }
+    };
+
+    const initAuth = async () => {
+      const { data } = await supabase.auth.getSession();
+      const sessionUser = data?.session?.user ?? null;
+
+      if (!isMounted) {
+        return;
+      }
+
+      setAuthUser(sessionUser);
+      if (sessionUser) {
+        await loadProfile(sessionUser.id);
+      } else {
+        setProfile(null);
+      }
+    };
+
+    initAuth();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        const sessionUser = session?.user ?? null;
+        setAuthUser(sessionUser);
+        if (sessionUser) {
+          loadProfile(sessionUser.id);
+        } else {
+          setProfile(null);
+        }
+      }
+    );
+
+    return () => {
+      isMounted = false;
+      authListener?.subscription?.unsubscribe();
+    };
+  }, []);
 
   const isActive = (path) => location.pathname === path;
+
+  const handleSignIn = async (event) => {
+    event.preventDefault();
+    setAuthError("");
+    setIsAuthLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (error) {
+      setAuthError(error.message);
+    }
+    setIsAuthLoading(false);
+  };
+
+  const handleSignOut = async () => {
+    setAuthError("");
+    setIsAuthLoading(true);
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      setAuthError(error.message);
+    }
+    setIsAuthLoading(false);
+  };
+
+  const handleGoogleSignIn = async () => {
+    setAuthError("");
+    setIsAuthLoading(true);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: window.location.origin,
+      },
+    });
+    if (error) {
+      setAuthError(error.message);
+      setIsAuthLoading(false);
+    }
+  };
 
   return (
     <header style={styles.header}>
@@ -26,6 +123,63 @@ export default function Header() {
           <NavLink to="/profile" isActive={isActive("/profile")} label="個人資料" />
           <NavLink to="/file-content" isActive={isActive("/file-content")} label="檔案內容" />
         </div>
+
+        <div style={styles.userArea}>
+          {authUser ? (
+            <>
+              <span style={styles.userEmail}>
+                {profile?.email || authUser.email || "Signed in"}
+              </span>
+              {profile?.role ? (
+                <span style={styles.userRole}>{profile.role}</span>
+              ) : null}
+              <button
+                type="button"
+                style={styles.authButton}
+                onClick={handleSignOut}
+                disabled={isAuthLoading}
+              >
+                Log out
+              </button>
+            </>
+          ) : (
+            <form style={styles.authForm} onSubmit={handleSignIn}>
+              <span style={styles.userHint}>Guest</span>
+              <button
+                type="button"
+                style={styles.authButtonSecondary}
+                onClick={handleGoogleSignIn}
+                disabled={isAuthLoading}
+              >
+                Log in with Google
+              </button>
+              <input
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                style={styles.authInput}
+                required
+              />
+              <input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                style={styles.authInput}
+                required
+              />
+              <button
+                type="submit"
+                style={styles.authButton}
+                disabled={isAuthLoading}
+              >
+                Log in
+              </button>
+            </form>
+          )}
+        </div>
+        {authError ? <div style={styles.authError}>{authError}</div> : null}
       </nav>
     </header>
   );
@@ -96,6 +250,63 @@ const styles = {
     display: "flex",
     gap: theme.spacing.sm,
     alignItems: "center",
+  },
+  userArea: {
+    display: "flex",
+    alignItems: "center",
+    gap: theme.spacing.sm,
+    paddingLeft: theme.spacing.md,
+    borderLeft: `1px solid ${theme.colors.neutral.gray200}`,
+  },
+  authForm: {
+    display: "flex",
+    alignItems: "center",
+    gap: theme.spacing.xs,
+  },
+  authInput: {
+    border: `1px solid ${theme.colors.neutral.gray200}`,
+    borderRadius: theme.borderRadius.sm,
+    padding: "4px 8px",
+    fontSize: theme.typography.fontSize.sm,
+  },
+  authButton: {
+    border: "none",
+    borderRadius: theme.borderRadius.sm,
+    backgroundColor: theme.colors.primary.main,
+    color: theme.colors.primary.contrastText,
+    padding: "6px 10px",
+    cursor: "pointer",
+    fontSize: theme.typography.fontSize.sm,
+  },
+  authButtonSecondary: {
+    border: `1px solid ${theme.colors.neutral.gray200}`,
+    borderRadius: theme.borderRadius.sm,
+    backgroundColor: theme.colors.background.paper,
+    color: theme.colors.text.primary,
+    padding: "6px 10px",
+    cursor: "pointer",
+    fontSize: theme.typography.fontSize.sm,
+  },
+  authError: {
+    marginLeft: theme.spacing.md,
+    fontSize: theme.typography.fontSize.xs,
+    color: theme.colors.error?.main || "#b00020",
+  },
+  userEmail: {
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.text.primary,
+  },
+  userRole: {
+    fontSize: theme.typography.fontSize.xs,
+    color: theme.colors.text.secondary,
+    backgroundColor: `${theme.colors.primary.main}15`,
+    padding: "2px 6px",
+    borderRadius: theme.borderRadius.full,
+    textTransform: "capitalize",
+  },
+  userHint: {
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.text.secondary,
   },
   link: {
     position: "relative",
