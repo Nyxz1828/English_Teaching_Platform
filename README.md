@@ -1,18 +1,21 @@
 # Remember to  download react-route
 given comment： 
+安裝相依套件
 
-
-
-```npm install react-router-dom```
-
+```npm install```
 
 ```npm install react-router-dom```
 
+
+```npm install react-router-dom```
 
 then only execute: 
 
-
  ```npm start```
+ with setup private keys 設定環境變數 :
+ 
+```REACT_APP_SUPABASE_URL=xxxx```
+```REACT_APP_SUPABASE_ANON_KEY=xxxx```
 
 
 
